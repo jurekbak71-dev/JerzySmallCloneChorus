@@ -15,7 +15,7 @@ static void check(bool c, const char* m) { if (!c) throw std::runtime_error(m); 
 static void rewind(MemoryStream& s) { s.seek(0, IBStream::kIBSeekSet, nullptr); }
 static void state(MemoryStream& s, const Values& values) {
     IBStreamer writer(&s, kLittleEndian);
-    writer.writeInt32(0x4A434831); writer.writeInt32(1);
+    writer.writeInt32(0x4A434831); writer.writeInt32(2);
     for (auto v : values) writer.writeDouble(v);
     rewind(s);
 }
@@ -29,7 +29,7 @@ int main() try {
         ParameterInfo info{}; check(c.getParameterInfo(i, info) == kResultOk && info.id == unsigned(i), "stable parameter IDs");
     }
     ++passed;
-    auto v=defaults();v[Bypass]=1;v[Model]=1;v[Depth]=.8;v[Stereo]=.7;
+    auto v=defaults();v[Bypass]=1;v[Model]=1;v[Depth]=.8;v[Stereo]=.7;v[Sync]=1;v[Division]=10./17.;
     MemoryStream initial; state(initial, v);
     check(p->setState(&initial) == kResultOk, "restore processor");
     MemoryStream saved; check(p->getState(&saved) == kResultOk, "save processor"); rewind(saved);
@@ -43,7 +43,14 @@ int main() try {
     ++passed;
     MemoryStream truncated(saved.getData(), saved.getSize() - 1);
     check(p->setState(&truncated) == kResultFalse, "truncated state must be rejected"); ++passed;
-    for(int id:{Model,Stereo}) {
+    MemoryStream legacy;IBStreamer old(&legacy,kLittleEndian);
+    old.writeInt32(0x4A434831);old.writeInt32(1);for(int i=0;i<9;++i)old.writeDouble(v[i]);rewind(legacy);
+    check(p->setState(&legacy)==kResultOk,"load v0.1.0 state");
+    MemoryStream migrated;p->getState(&migrated);rewind(migrated);c.setComponentState(&migrated);
+    for(int i=0;i<9;++i)check(c.getParamNormalized(i)==v[i],"legacy controls unchanged");
+    check(c.getParamNormalized(Sync)==0&&c.getParamNormalized(Division)==defaults()[Division],"legacy state defaults to Free");
+    rewind(initial);check(p->setState(&initial)==kResultOk,"restore current state");++passed;
+    for(int id:{Model,Stereo,Sync,Division}) {
         String128 text{};double parsed=0;
         check(c.getParamStringByValue(id,1,text)==kResultTrue&&c.getParamValueByString(id,text,parsed)==kResultTrue&&parsed==1,"parameter text roundtrip");
     }
@@ -82,6 +89,29 @@ int main() try {
     data.numSamples = 0; data.numOutputs = data.numInputs = 0; data.inputs = data.outputs = nullptr;
     check(p->process(data) == kResultOk, "zero sample parameter flush"); ++passed;
     p->setActive(false);
+    // Exercise actual host tempo, sample-offset division automation and transport jumps.
+    for(int model=0;model<int(circuits.size());++model){
+        auto patch=defaults();patch[Model]=model/13.;patch[Sync]=1;patch[Division]=7./17.;patch[Mix]=1;
+        MemoryStream st;state(st,patch);p->setState(&st);p->setActive(true);
+        Engine reference;reference.reset(48000,patch);
+        data.numSamples=128;data.numInputs=data.numOutputs=1;data.inputs=&in;data.outputs=&out;
+        ProcessContext context{};context.state=ProcessContext::kPlaying|ProcessContext::kTempoValid|ProcessContext::kProjectTimeMusicValid;
+        context.sampleRate=48000;data.processContext=&context;
+        for(int block=0;block<12;++block){
+            context.tempo=block<6?90:140;context.projectTimeMusic=(block<8?3.25:21.75)+block*.1;
+            ParameterChanges divChange;int32 idx=0;
+            if(block==4){auto* q=divChange.addParameterData(Division,idx);q->addPoint(37,11./17.,idx);data.inputParameterChanges=&divChange;}
+            for(int i=0;i<128;++i)left[i]=float(.2*std::sin((block*128+i)*.11));
+            p->process(data);
+            for(int i=0;i<128;++i){
+                if(block==4&&i==37)patch[Division]=11./17.;
+                auto expected=reference.process(left[i],right[i],patch,context.tempo,context.projectTimeMusic+i*context.tempo/(60.*48000));
+                check(std::abs(outL[i]-expected[0])<1e-6,"host BPM/grid and division automation audio");
+            }
+            data.inputParameterChanges=nullptr;
+        }
+        p->setActive(false);++passed;
+    }
     p->terminate(); c.terminate();
     std::cout << passed << " processor/state checks passed\n";
     return 0;

@@ -1,12 +1,12 @@
-# Jerzy Clone Collection 0.1.0
+# Jerzy Clone Collection 0.1.1
 
 Pierwszy prototyp Windows x64 VST3: chorus, vibrato i flanger z panelem inspirowanym wyglądem klasycznych kostek EHX. Własna grafika wektorowa i oznaczenia Jerzy Audio. Brak powiązania z Electro-Harmonix.
 
 ## Pobierz
 
-[Windows x64 VST3 — ZIP v0.1.0](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases/download/v0.1.0/JerzyCloneCollection-Win64.zip)
+[Windows x64 VST3 — ZIP v0.1.1](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases/download/v0.1.1/JerzyCloneCollection-Win64.zip)
 
-[GitHub Releases](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases) · [Podgląd GUI](docs/gui.png) · [Sumy SHA-256](releases/v0.1.0/SHA256SUMS.txt)
+[GitHub Releases](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases) · [Podgląd GUI](docs/gui.png) · [Sumy SHA-256](releases/v0.1.1/SHA256SUMS.txt)
 
 ## Instalacja w Windows / FL Studio
 
@@ -20,7 +20,11 @@ Zachowaj strukturę `Contents/x86_64-win`. To VST3, nie VST2 DLL.
 ## Obsługa
 
 - Kliknij nazwę obwodu na górze, aby wybrać profil.
-- RATE: 0,05–8 Hz. DEPTH / RANGE: głębokość modulacji.
+- RATE: 0,05–8 Hz w trybie FREE. DEPTH / RANGE: głębokość modulacji.
+- FREE / BPM SYNC: przycisk pod Filter Matrix włącza synchronizację modulacji z tempem FL Studio (lub innego hosta VST3), dla każdego modelu. W trybie Sync gałka Rate wybiera podział zamiast Hz.
+- Przycisk obok BPM SYNC otwiera wybór: 4 bars, 2 bars, 1 bar, 1/2 D, 1/2, 1/2 T, 1/4 D, 1/4, 1/4 T, 1/8 D, 1/8, 1/8 T, 1/16 D, 1/16, 1/16 T, 1/32, 1/32 T, 1/64. D = z kropką, T = triola. Podział określa pełny cykl LFO; 1 bar oznacza cztery ćwierćnuty.
+- Podczas odtwarzania faza LFO podąża za pozycją muzyczną hosta, także po zmianie tempa, przewinięciu i pętli. Filter Matrix nadal zatrzymuje modulację. Gdy host nie przekazuje pozycji, używany jest zegar według BPM; bez BPM przyjmowane jest ostatnie znane tempo lub 120 BPM po aktywacji.
+- Projekty v0.1.0 są odczytywane bez zmiany starych parametrów i z wyłączonym Sync. W trybie Free zachowano dotychczasowy DSP.
 - CHORUS / VIBRATO: 0% dry, 50% chorus/flanger, 100% wet/vibrato.
 - COLOR / FEEDBACK: sprzężenie w profilach flangera; w trzech profilach chorusowych nieaktywne.
 - OUTPUT: −12 do +12 dB, środek = 0 dB.
@@ -29,7 +33,7 @@ Zachowaj strukturę `Contents/x86_64-win`. To VST3, nie VST2 DLL.
 - Metalowy footswitch: bypass z wygładzeniem, dioda pokazuje aktywację.
 - Gałki: ruch pionowy, Shift = dokładnie, prawy klik = reset, kółko myszy = krok.
 
-Mono, mono → stereo, stereo; 32/64-bit float; 8–384 kHz. Automatyka z offsetami próbek, zapis stanu wszystkich dziewięciu parametrów. Brak dodatkowej raportowanej latencji; samo opóźnienie modulowanego toru wet jest częścią efektu.
+Mono, mono → stereo, stereo; 32/64-bit float; 8–384 kHz. Automatyka z offsetami próbek, zapis stanu wszystkich jedenastu parametrów. Brak dodatkowej raportowanej latencji; samo opóźnienie modulowanego toru wet jest częścią efektu.
 
 ## Status odwzorowania
 

@@ -59,6 +59,13 @@ int main(int argc, char** argv) try {
     click(child,160,505);check(c->getParamNormalized(Filter)==1,"filter matrix toggle");
     SendMessage(child,WM_RBUTTONUP,0,MAKELPARAM(160,191));
     check(c->getParamNormalized(Rate)==defaults()[Rate],"right click reset");
+    double freeRate=c->getParamNormalized(Rate);
+    click(child,130,547);check(c->getParamNormalized(Sync)==1,"visible BPM SYNC button");
+    SendMessage(child,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(160,191));
+    SendMessage(child,WM_MOUSEMOVE,MK_LBUTTON,MAKELPARAM(160,141));
+    SendMessage(child,WM_LBUTTONUP,0,MAKELPARAM(160,141));
+    check(c->getParamNormalized(Division)>defaults()[Division]&&c->getParamNormalized(Rate)==freeRate,"Rate knob edits division without losing free rate");
+    click(child,130,547);check(c->getParamNormalized(Sync)==0,"Free toggle");
     for(int i=0;i<NumParams;++i){c->setParamNormalized(i,defaults()[i]);}
     if (argc >= 3) screenshot(child, argv[2]);
     check(view->removed() == kResultOk, "detach GUI"); view->release(); DestroyWindow(parent);

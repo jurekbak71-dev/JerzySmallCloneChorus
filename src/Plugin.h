@@ -9,6 +9,7 @@ inline const Steinberg::FUID controllerId(0xA789D0B3, 0x912F4D01, 0x985CEB70, 0x
 class Processor final : public Steinberg::Vst::AudioEffect {
     std::array<std::atomic<double>, NumParams> values;
     Engine engine;
+    double lastTempo = 120;
 public:
     Processor();
     static Steinberg::FUnknown* create(void*) { return static_cast<Steinberg::Vst::IAudioProcessor*>(new Processor); }

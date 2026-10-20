@@ -5,10 +5,10 @@
 #include <vector>
 namespace jerzy {
 constexpr double pi=3.14159265358979323846;
-enum Param { Rate, Depth, Mix, Color, Level, Model, Stereo, Filter, Bypass, NumParams };
+enum Param { Rate, Depth, Mix, Color, Level, Model, Stereo, Filter, Bypass, Sync, Division, NumParams };
 using Values=std::array<double,NumParams>;
 inline double clean(double x){return std::isfinite(x)?std::clamp(x,0.,1.):0.;}
-inline Values defaults(){return {.30,.45,.5,.25,.5,0,0,0,0};}
+inline Values defaults(){return {.30,.45,.5,.25,.5,0,0,0,0,0,7./17.};}
 struct Circuit {const char* name; double stages, clock, sweep, cutoff, emphasis, feedback; bool chorus;};
 // Clocks and excursion are initial behavioural tuning, not measured calibration.
 inline constexpr std::array<Circuit,14> circuits{{
@@ -29,6 +29,14 @@ inline constexpr std::array<Circuit,14> circuits{{
 }};
 inline int modelIndex(double v){return int(std::round(clean(v)*(circuits.size()-1)));}
 inline double rateHz(double v){return .05*std::pow(160.,clean(v));}
+struct BeatDivision {const char* label; double beats;};
+inline constexpr std::array<BeatDivision,18> divisions{{
+ {"4 bars",16},{"2 bars",8},{"1 bar",4},{"1/2 D",3},{"1/2",2},{"1/2 T",4./3.},
+ {"1/4 D",1.5},{"1/4",1},{"1/4 T",2./3.},{"1/8 D",.75},{"1/8",.5},{"1/8 T",1./3.},
+ {"1/16 D",.375},{"1/16",.25},{"1/16 T",1./6.},{"1/32",.125},{"1/32 T",1./12.},{"1/64",.0625}
+}};
+inline int divisionIndex(double v){return int(std::round(clean(v)*(divisions.size()-1)));}
+inline double syncHz(double bpm,double division){return (std::isfinite(bpm)&&bpm>0?bpm:120.)/(60*divisions[divisionIndex(division)].beats);}
 struct OnePole {double z=0; double run(double x,double a){z+=a*(x-z); if(std::abs(z)<1e-20)z=0;return z;}};
 class Engine {
  struct Channel { std::vector<double> ring; size_t pos=0; OnePole input, pre, low1,low2, dc; double feedback=0;
@@ -41,9 +49,9 @@ class Engine {
  public:
  void reset(double sampleRate,const Values& p=defaults()) {fs=sampleRate; smooth=p; current=pending=modelIndex(p[Model]); phase=0;fade=1;switching=false;bypass=p[Bypass]; for(auto& c:ch)c.reset(int(fs*.12)+8);}
  double getPhase() const{return phase;}
- std::array<double,2> process(double left,double right,const Values& raw){
+ std::array<double,2> process(double left,double right,const Values& raw,double bpm=120.,double beat=NAN){
   Values p{};for(int i=0;i<NumParams;++i)p[i]=clean(raw[i]);
-  for(int i=0;i<NumParams;++i) if(i!=Model&&i!=Filter&&i!=Bypass)smooth[i]+=(p[i]-smooth[i])*coeff(35);
+  for(int i=0;i<NumParams;++i) if(i!=Model&&i!=Filter&&i!=Bypass&&i!=Sync&&i!=Division)smooth[i]+=(p[i]-smooth[i])*coeff(35);
   pending=modelIndex(p[Model]);
   if(pending!=current)switching=true;
   const double step=1./(fs*.012);
@@ -51,7 +59,12 @@ class Engine {
   else fade=std::min(1.,fade+step);
   bypass+=(p[Bypass]-bypass)*coeff(90);
   const auto& m=circuits[current];
-  if(p[Filter]<.5){phase+=rateHz(smooth[Rate])/fs; phase-=std::floor(phase);}
+  if(p[Filter]<.5){
+   if(p[Sync]>=.5&&std::isfinite(beat)){
+    phase=beat/divisions[divisionIndex(p[Division])].beats;
+   }else phase+=(p[Sync]>=.5?syncHz(bpm,p[Division]):rateHz(smooth[Rate]))/fs;
+   phase-=std::floor(phase);
+  }
   const double triangle=1-4*std::abs(phase-.5);
   const double lfo=m.chorus? std::sin(2*pi*phase):triangle;
   std::array<double,2> result{}, in{left,right};

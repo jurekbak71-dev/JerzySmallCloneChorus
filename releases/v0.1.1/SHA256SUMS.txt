@@ -1,0 +1,2 @@
+caafc58de69a596fbb67749b0b4bd612a3c1ae34cc786e966f19ecc6bfdbea69  JerzyCloneCollection.vst3/Contents/x86_64-win/JerzyCloneCollection.vst3
+051002a9fdcd3cec28c351eba7a0c4df6a1cfeff1f40244be7d39ee58f48ab38  JerzyCloneCollection-Win64.zip

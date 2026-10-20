@@ -1,12 +1,14 @@
-# Validation — 0.1.0
+# Validation — 0.1.1
 
-Current cloud build, 2026-10-20. Native GNU C++ 14; Windows x64 MinGW GCC 14, static C++ runtime; official Steinberg SDK 3.8.1 pinned in README.
+Cloud validation, 2026-10-20. GNU C++ 14 / MinGW GCC 14, Steinberg SDK 3.8.1.
 
-- Native Linux: DSP suite, 89 scenarios (14 profiles × 6 sample rates plus dry, bypass, stereo, Filter Matrix and model switching).
-- Native Linux: 10 processor/state scenarios (persistence, invalid/truncated state rejection, bus layouts, bypass, automation, concurrent restore, zero-sample flush).
-- Native Linux VST3: Steinberg validator, 47 passed / 0 failed.
-- Windows DSP under Wine 10: 89 scenarios passed.
-- Windows processor/state under Wine 10: 10 scenarios passed.
-- Windows GUI under Wine/Xvfb: actual VST3 loaded; editor attached/detached; rate drag, right-click reset, bypass on/off and Filter Matrix passed. `gui.png` captures the actual editor.
+- Linux CTest: DSP and processor/state suites passed.
+- 594 DSP scenarios: previous coverage plus all 14 models × 18 divisions × 90/140 BPM, negative preroll alignment, Filter Matrix freeze and missing-tempo fallback.
+- 25 processor/state scenarios: previous coverage, legacy nine-parameter state migration, new parameter persistence and actual VST3 ProcessContext tempo/grid rendering for every model, including sample-offset division automation, tempo changes and transport jumps.
+- Free-mode output: bit-identical against the pre-sync DSP for all 14 models over 48,000 samples per model.
+- Windows x64 DSP and processor/state executables under Wine: 594 and 25 scenarios passed.
+- Windows actual VST3 GUI under Wine/Xvfb: attachment, knobs, reset, bypass, Filter Matrix, BPM Sync/Free toggle; Rate edits division in Sync without changing the saved Free rate. Screenshot is from the actual editor.
+- Linux official Steinberg validator: 47 passed / 0 failed.
+- Windows complete bundle official Steinberg validator under Wine: 47 passed / 0 failed, exit status 0.
 
-Final Windows x64 bundle: official Steinberg validator under Wine, **47 passed / 0 failed**, exit status 0. The earlier flat DLL invocation failed only the bundle-structure check; final delivery uses the validated folder structure. PE imports contain only GDI32, KERNEL32, msvcrt, ole32 and USER32. No Wine or zlib files are required by the delivered plugin. Windows and FL Studio native testing, audio-device latency, and comparison against hardware remain untested. Wine GUI results do not establish native DAW compatibility. Numerical stability tests do not establish authenticity of the analogue models; see MODELLING.md.
+Native Windows/FL Studio testing and hardware calibration remain unverified. The existing native MSVC CI had a build failure before this tempo-sync change; it is not used as evidence of a passing native Windows build. Numerical tests and Wine do not establish native DAW compatibility or analogue authenticity.

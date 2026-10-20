@@ -14,5 +14,17 @@ int main()try{
  {auto p=defaults();p[Mix]=1;p[Stereo]=1;Engine e;e.reset(48000,p);double difference=0,energy=0;for(int i=0;i<48000;++i){double x=.3*sin(2*pi*440*i/48000.);auto y=e.process(x,x,p);difference+=std::abs(y[0]-y[1]);energy+=y[0]*y[0];}check(difference>10&&energy>1,"wet/stereo modulation missing");++checks;}
  {auto p=defaults();p[Filter]=1;Engine e;e.reset(48000,p);for(int i=0;i<1000;++i)e.process(.1,.1,p);check(e.getPhase()==0,"filter matrix does not freeze clock");++checks;}
  {Engine e;e.reset(48000);auto p=defaults();for(int i=0;i<100000;++i){p[Model]=(i/2000%14)/13.;p[Color]=1;auto y=e.process(.2,.1,p);check(std::isfinite(y[0])&&std::abs(y[0])<8,"switching instability");}++checks;}
+ // Every division and model: one cycle is the declared number of quarter-note beats.
+ for(size_t model=0;model<circuits.size();++model)for(size_t div=0;div<divisions.size();++div)for(double bpm:{90.,140.}){
+  auto p=defaults();p[Model]=double(model)/13.;p[Sync]=1;p[Division]=double(div)/17.;
+  Engine e;e.reset(48000,p);for(int i=0;i<240;++i)e.process(0,0,p,bpm);
+  double expected=std::fmod(240*bpm/(60*48000*divisions[div].beats),1.);
+  check(std::abs(e.getPhase()-expected)<1e-10,"incorrect tempo division period");
+  e.process(0,0,p,bpm,-3.125);expected=-3.125/divisions[div].beats;expected-=std::floor(expected);
+  check(std::abs(e.getPhase()-expected)<1e-10,"host position alignment including negative preroll");
+  auto frozen=e.getPhase();p[Filter]=1;e.process(0,0,p,bpm,99.75);check(e.getPhase()==frozen,"Filter Matrix must freeze sync");
+  ++checks;
+ }
+ {auto p=defaults();p[Sync]=1;Engine e;e.reset(48000,p);e.process(0,0,p,NAN);check(std::isfinite(e.getPhase()),"missing tempo fallback");++checks;}
  std::cout<<checks<<" DSP scenarios passed\n";return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
