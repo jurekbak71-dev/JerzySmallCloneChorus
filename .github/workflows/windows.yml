@@ -23,7 +23,16 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -A x64 -DVST3_SDK_ROOT="${{ runner.temp }}/vst3sdk"
       - name: Build and run SDK validator
-        run: cmake --build build --config Release --parallel 4
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel 4 2>&1 | Tee-Object -FilePath build.log
+          $buildExit = $LASTEXITCODE
+          if ($buildExit -ne 0) {
+            '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Get-Content build.log -Tail 100 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
+          exit $buildExit
       - name: DSP and processor tests
         run: ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v4
