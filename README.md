@@ -4,7 +4,7 @@ Pierwszy prototyp Windows x64 VST3: chorus, vibrato i flanger z panelem inspirow
 
 ## Pobierz
 
-[Windows x64 VST3 — ZIP v0.1.0](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/raw/refs/heads/main/releases/v0.1.0/JerzyCloneCollection-Win64.zip)
+[Windows x64 VST3 — ZIP v0.1.0](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases/download/v0.1.0/JerzyCloneCollection-Win64.zip)
 
 [GitHub Releases](https://github.com/jurekbak71-dev/JerzySmallCloneChorus/releases) · [Podgląd GUI](docs/gui.png) · [Sumy SHA-256](releases/v0.1.0/SHA256SUMS.txt)
 
