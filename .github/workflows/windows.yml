@@ -1,0 +1,33 @@
+name: Windows VST3 build and tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned Steinberg SDK
+        shell: pwsh
+        run: |
+          git clone https://github.com/steinbergmedia/vst3sdk.git "$env:RUNNER_TEMP/vst3sdk"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git -C "$env:RUNNER_TEMP/vst3sdk" checkout 3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git -C "$env:RUNNER_TEMP/vst3sdk" submodule update --init --recursive
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DVST3_SDK_ROOT="${{ runner.temp }}/vst3sdk"
+      - name: Build and run SDK validator
+        run: cmake --build build --config Release --parallel 4
+      - name: DSP and processor tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JerzyCloneCollection-Windows-MSVC
+          path: build/VST3/Release/JerzyCloneCollection.vst3
+          if-no-files-found: error

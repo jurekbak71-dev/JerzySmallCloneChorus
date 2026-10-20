@@ -1,0 +1,36 @@
+name: Publish tested VST3 package
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify archived package and publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          cd "releases/$version"
+          python3 - <<'PY'
+          import hashlib, zipfile
+          from pathlib import Path
+          archive = Path('JerzyCloneCollection-Win64.zip')
+          lines = Path('SHA256SUMS.txt').read_text().splitlines()
+          expected = next(line.split()[0] for line in lines if line.endswith('  ' + archive.name))
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
+          with zipfile.ZipFile(archive) as z:
+              assert z.testzip() is None
+              name = 'JerzyCloneCollection.vst3/Contents/x86_64-win/JerzyCloneCollection.vst3'
+              expected_binary = next(line.split()[0] for line in lines if line.endswith('  ' + name))
+              assert hashlib.sha256(z.read(name)).hexdigest() == expected_binary
+          PY
+          gh release create "$version" JerzyCloneCollection-Win64.zip SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Jerzy Clone Collection $version — Windows x64 VST3 prototype" \
+            --notes-file ../../docs/RELEASE_NOTES.md
